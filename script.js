@@ -1,259 +1,407 @@
-(function () {
-  // ======= Simple Persistent Auth + Per-User Storage =======
-  const LS_KEYS = {
-    USERS: "clspa_users",
-    CURRENT: "clspa_current_user",
-    DATA: "clspa_user_data" // { [email]: { tasks: [{text,color}] } }
-  };
-
-  // Helpers to read/write localStorage JSON safely
-  const readJSON = (k, fallback) => {
-    try { return JSON.parse(localStorage.getItem(k)) ?? fallback; }
-    catch { return fallback; }
-  };
-  const writeJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-
-  const getUsers = () => readJSON(LS_KEYS.USERS, {});
-  const saveUsers = (obj) => writeJSON(LS_KEYS.USERS, obj);
-  const getData = () => readJSON(LS_KEYS.DATA, {});
-  const saveData = (obj) => writeJSON(LS_KEYS.DATA, obj);
-
-  const getCurrentUser = () => localStorage.getItem(LS_KEYS.CURRENT);
-  const setCurrentUser = (email) => {
-    if (email) localStorage.setItem(LS_KEYS.CURRENT, email);
-    else localStorage.removeItem(LS_KEYS.CURRENT);
-  };
-
-  // ======= DOM =======
-  const colors = ["#4FC3F7", "#E57373", "#81C784", "#FFD54F", "#BA68C8"];
-  const pages = {
-    signup: document.getElementById("signup-page"),
-    login: document.getElementById("login-page"),
-    tasks: document.getElementById("tasks-page"),
-    account: document.getElementById("account-page")
-  };
-
-  const taskList = document.getElementById("task-list");
-  const addBtn = document.getElementById("add-btn");
-  const newTaskInput = document.getElementById("new-task");
-
-  // ======= Routing =======
-  function showPage(id) {
-    Object.values(pages).forEach(p => p && p.classList.add("hidden"));
-    if (pages[id]) pages[id].classList.remove("hidden");
+class TaskManager {
+  constructor() {
+    this.tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    this.currentFilter = 'all';
+    this.currentSort = 'date';
+    this.isDarkTheme = localStorage.getItem('darkTheme') !== 'false';
+    
+    this.initializeElements();
+    this.setupEventListeners();
+    this.applyTheme();
+    this.render();
+    this.updateStats();
   }
-  window.showPage = showPage;
 
-  function requireAuthThen(pageId) {
-    if (getCurrentUser()) {
-      showPage(pageId);
-      if (pageId === "tasks") loadTasks();
+  initializeElements() {
+    this.taskInput = document.getElementById('taskInput');
+    this.colorInput = document.getElementById('colorInput');
+    this.priorityInput = document.getElementById('priorityInput');
+    this.addTaskBtn = document.getElementById('addTaskBtn');
+    this.taskList = document.getElementById('taskList');
+    this.emptyState = document.getElementById('emptyState');
+    this.themeToggle = document.getElementById('themeToggle');
+    this.filterBtns = document.querySelectorAll('.filter-btn');
+    this.sortBy = document.getElementById('sortBy');
+    this.clearCompleted = document.getElementById('clearCompleted');
+    this.deleteAll = document.getElementById('deleteAll'); // Add this line
+    this.fabBtn = document.getElementById('fabBtn');
+    this.toastContainer = document.getElementById('toastContainer');
+    
+    // Stats elements
+    this.totalTasks = document.getElementById('totalTasks');
+    this.completedTasks = document.getElementById('completedTasks');
+    this.pendingTasks = document.getElementById('pendingTasks');
+    this.taskCount = document.getElementById('taskCount');
+  }
+
+  setupEventListeners() {
+    // Add task
+    this.addTaskBtn.addEventListener('click', () => this.addTask());
+    this.fabBtn.addEventListener('click', () => this.focusInput());
+    this.taskInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.addTask();
+    });
+
+    // Theme toggle
+    this.themeToggle.addEventListener('click', () => this.toggleTheme());
+
+    // Filters
+    this.filterBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => this.setFilter(e.target.dataset.filter));
+    });
+
+    // Sort
+    this.sortBy.addEventListener('change', (e) => this.setSortBy(e.target.value));
+
+    // Clear completed
+    this.clearCompleted.addEventListener('click', () => this.clearCompletedTasks());
+
+    // Delete all tasks - Add this line
+    this.deleteAll.addEventListener('click', () => this.deleteAllTasks());
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
+  }
+
+  addTask() {
+    const text = this.taskInput.value.trim();
+    const color = this.colorInput.value;
+    const priority = this.priorityInput.value;
+
+    if (!text) {
+      this.showToast('Please enter a task!', 'error');
+      this.taskInput.focus();
       return;
     }
-    showPage("login");
-  }
 
-  // ======= Auth =======
-  window.register = function () {
-    const email = document.getElementById("signup-email").value.trim().toLowerCase();
-    const pass = document.getElementById("signup-pass").value;
+    const task = {
+      id: Date.now(),
+      text,
+      color,
+      priority,
+      completed: false,
+      createdAt: new Date().toISOString(),
+      completedAt: null
+    };
 
-    if (!email || !pass) return alert("Please enter email and password.");
-    const users = getUsers();
-    if (users[email]) return alert("An account with this email already exists. Please log in.");
+    this.tasks.unshift(task);
+    this.taskInput.value = '';
+    this.save();
+    this.render();
+    this.updateStats();
+    this.showToast('Task added successfully!');
 
-    users[email] = { email, pass, createdAt: Date.now() };
-    saveUsers(users);
-
-    // Initialize blank data for this user
-    const data = getData();
-    if (!data[email]) data[email] = { tasks: [] };
-    saveData(data);
-
-    // Require login after signup as requested
-    alert("Sign up successful. Please log in.");
-    showPage("login");
-  };
-
-  window.login = function () {
-    const email = document.getElementById("login-email").value.trim().toLowerCase();
-    const pass = document.getElementById("login-pass").value;
-    const users = getUsers();
-    if (!users[email]) return alert("No account found. Please sign up.");
-    if (users[email].pass !== pass) return alert("Incorrect password.");
-    setCurrentUser(email);
-    showPage("tasks");
-    loadTasks();
-  };
-
-  window.logout = function () {
-    setCurrentUser(null);
-    showPage("login");
-    taskList.innerHTML = "";
-    newTaskInput.value = "";
-  };
-
-  // ======= Account management =======
-  window.changeEmail = function () {
-    const cur = getCurrentUser();
-    if (!cur) return requireAuthThen("account");
-    const newEmail = document.getElementById("newEmail").value.trim().toLowerCase();
-    if (!newEmail) return alert("Enter a new email.");
-    const users = getUsers();
-    if (users[newEmail] && newEmail !== cur) return alert("That email is already taken.");
-
-    // move user
-    users[newEmail] = { ...users[cur], email: newEmail };
-    delete users[cur];
-    saveUsers(users);
-
-    // move data
-    const data = getData();
-    if (data[cur]) {
-      data[newEmail] = data[cur];
-      delete data[cur];
-      saveData(data);
-    }
-    setCurrentUser(newEmail);
-    alert("Email updated.");
-  };
-
-  window.changePassword = function () {
-    const cur = getCurrentUser();
-    if (!cur) return requireAuthThen("account");
-    const p1 = document.getElementById("newPass").value;
-    const p2 = document.getElementById("repeatPass").value;
-    if (!p1) return alert("Enter a new password.");
-    if (p1 !== p2) return alert("Passwords do not match.");
-    const users = getUsers();
-    users[cur].pass = p1;
-    saveUsers(users);
-    alert("Password updated.");
-  };
-
-  window.deleteAccount = function () {
-    const cur = getCurrentUser();
-    if (!cur) return requireAuthThen("account");
-    if (!confirm("Delete your account and all your tasks? This cannot be undone.")) return;
-    const users = getUsers();
-    delete users[cur];
-    saveUsers(users);
-    const data = getData();
-    delete data[cur];
-    saveData(data);
-    setCurrentUser(null);
-    showPage("signup");
-    taskList.innerHTML = "";
-    alert("Account deleted.");
-  };
-
-  // ======= Tasks =======
-  function loadTasks() {
-    const cur = getCurrentUser();
-    if (!cur) return;
-    taskList.innerHTML = "";
-    const data = getData();
-    const tasks = (data[cur] && data[cur].tasks) ? data[cur].tasks : [];
-    tasks.forEach(t => addTask(t.text, t.color));
-    enableDragAndDrop(); // re-enable after rebuild
-  }
-
-  function saveTasks() {
-    const cur = getCurrentUser();
-    if (!cur) return;
-    const tasks = Array.from(taskList.querySelectorAll(".task")).map(li => ({
-      text: li.querySelector(".text").textContent,
-      color: li.style.background || colors[0]
-    }));
-    const data = getData();
-    if (!data[cur]) data[cur] = { tasks: [] };
-    data[cur].tasks = tasks;
-    saveData(data);
-  }
-
-  addBtn?.addEventListener("click", () => {
-    if (newTaskInput.value.trim() !== "") {
-      addTask(newTaskInput.value.trim());
-      newTaskInput.value = "";
-      saveTasks();
-    }
-  });
-
-  function addTask(text, color) {
-    const li = document.createElement("li");
-    li.className = "task";
-    li.draggable = true;
-    li.style.background = color || colors[Math.floor(Math.random() * colors.length)];
-
-    const dragBtn = document.createElement("button");
-    dragBtn.textContent = "DRAG";
-    dragBtn.className = "btn drag-btn";
-
-    const span = document.createElement("span");
-    span.className = "text";
-    span.textContent = text;
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "✕";
-    delBtn.className = "btn delete-btn";
-    delBtn.addEventListener("click", () => {
-      li.remove();
-      saveTasks();
-    });
-
-    li.appendChild(dragBtn);
-    li.appendChild(span);
-    li.appendChild(delBtn);
-    taskList.appendChild(li);
-  }
-
-  // Drag & drop reordering
-  function enableDragAndDrop() {
-    const tasks = taskList.querySelectorAll(".task");
-    tasks.forEach(task => {
-      task.addEventListener("dragstart", () => task.classList.add("dragging"));
-      task.addEventListener("dragend", () => {
-        task.classList.remove("dragging");
-        saveTasks();
-      });
-    });
-
-    taskList.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      const afterElement = getDragAfterElement(taskList, e.clientY);
-      const draggable = document.querySelector(".task.dragging");
-      if (!draggable) return;
-      if (afterElement == null) {
-        taskList.appendChild(draggable);
-      } else {
-        taskList.insertBefore(draggable, afterElement);
+    // Add animation
+    setTimeout(() => {
+      const newTaskElement = this.taskList.firstElementChild;
+      if (newTaskElement) {
+        newTaskElement.style.animation = 'none';
+        newTaskElement.offsetHeight; // Force reflow
+        newTaskElement.style.animation = 'taskSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
       }
+    }, 10);
+  }
+
+  toggleTask(id) {
+    const task = this.tasks.find(t => t.id === id);
+    if (task) {
+      task.completed = !task.completed;
+      task.completedAt = task.completed ? new Date().toISOString() : null;
+      this.save();
+      this.render();
+      this.updateStats();
+      
+      const action = task.completed ? 'completed' : 'uncompleted';
+      this.showToast(`Task ${action}!`);
+    }
+  }
+
+  editTask(id) {
+    const task = this.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const newText = prompt('Edit task:', task.text);
+    if (newText !== null && newText.trim()) {
+      task.text = newText.trim();
+      this.save();
+      this.render();
+      this.showToast('Task updated!');
+    }
+  }
+
+  deleteTask(id) {
+    if (confirm('Are you sure you want to delete this task?')) {
+      this.tasks = this.tasks.filter(t => t.id !== id);
+      this.save();
+      this.render();
+      this.updateStats();
+      this.showToast('Task deleted!');
+    }
+  }
+
+  setFilter(filter) {
+    this.currentFilter = filter;
+    this.filterBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
     });
+    this.render();
   }
 
-  function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll(".task:not(.dragging)")];
-    return draggableElements.reduce((closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child };
-      } else {
-        return closest;
-      }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  setSortBy(sortBy) {
+    this.currentSort = sortBy;
+    this.render();
   }
 
-  // ======= Initial load =======
-  window.addEventListener("load", () => {
-    // Decide start page: if users exist, show login, else show signup
-    const hasAnyUser = Object.keys(getUsers()).length > 0;
-    const cur = getCurrentUser();
-    if (cur) {
-      showPage("tasks");
-      loadTasks();
+  clearCompletedTasks() {
+    const completedCount = this.tasks.filter(t => t.completed).length;
+    if (completedCount === 0) {
+      this.showToast('No completed tasks to clear!', 'error');
+      return;
+    }
+
+    if (confirm(`Delete ${completedCount} completed task(s)?`)) {
+      this.tasks = this.tasks.filter(t => !t.completed);
+      this.save();
+      this.render();
+      this.updateStats();
+      this.showToast(`${completedCount} completed task(s) cleared!`);
+    }
+  }
+
+  // Add this new method after clearCompletedTasks()
+  deleteAllTasks() {
+    const totalCount = this.tasks.length;
+    if (totalCount === 0) {
+      this.showToast('No tasks to delete!', 'error');
+      return;
+    }
+
+    // Create a more detailed confirmation dialog
+    const confirmMessage = `⚠️ Are you sure you want to delete ALL ${totalCount} task(s)?\n\nThis action cannot be undone!`;
+    
+    if (confirm(confirmMessage)) {
+      // Add a slight delay for better UX
+      this.showToast('Deleting all tasks...', 'error');
+      
+      setTimeout(() => {
+        this.tasks = [];
+        this.save();
+        this.render();
+        this.updateStats();
+        this.showToast(`All ${totalCount} task(s) deleted successfully!`);
+      }, 500);
+    }
+  }
+
+  getFilteredAndSortedTasks() {
+    let filtered = [...this.tasks];
+
+    // Apply filter
+    switch (this.currentFilter) {
+      case 'pending':
+        filtered = filtered.filter(t => !t.completed);
+        break;
+      case 'completed':
+        filtered = filtered.filter(t => t.completed);
+        break;
+    }
+
+    // Apply sort
+    switch (this.currentSort) {
+      case 'priority':
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        filtered.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+        break;
+      case 'alphabetical':
+        filtered.sort((a, b) => a.text.localeCompare(b.text));
+        break;
+      case 'date':
+      default:
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+    }
+
+    return filtered;
+  }
+
+  render() {
+    const tasks = this.getFilteredAndSortedTasks();
+    
+    if (tasks.length === 0) {
+      this.taskList.style.display = 'none';
+      this.emptyState.style.display = 'block';
     } else {
-      showPage(hasAnyUser ? "login" : "signup");
+      this.taskList.style.display = 'block';
+      this.emptyState.style.display = 'none';
     }
-  });
-})();
+
+    this.taskList.innerHTML = tasks.map(task => this.createTaskHTML(task)).join('');
+    
+    tasks.forEach(task => {
+      const taskElement = document.querySelector(`[data-task-id="${task.id}"]`);
+      if (taskElement) {
+        this.setupTaskEventListeners(taskElement, task);
+      }
+    });
+  }
+
+  createTaskHTML(task) {
+    const createdDate = new Date(task.createdAt).toLocaleDateString();
+    const timeAgo = this.getTimeAgo(task.createdAt);
+    
+    return `
+      <li class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+        <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle">
+          ${task.completed ? '<span class="material-icons-outlined" style="font-size: 14px;">check</span>' : ''}
+        </div>
+        <div class="task-color" style="background-color: ${task.color}"></div>
+        <div class="task-content">
+          <div class="task-text">${this.escapeHTML(task.text)}</div>
+          <div class="task-meta">
+            <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+            <span>${timeAgo}</span>
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="task-btn edit" data-action="edit" title="Edit task">
+            <span class="material-icons-outlined" style="font-size: 16px;">edit</span>
+          </button>
+          <button class="task-btn delete" data-action="delete" title="Delete task">
+            <span class="material-icons-outlined" style="font-size: 16px;">delete</span>
+          </button>
+        </div>
+      </li>
+    `;
+  }
+
+  setupTaskEventListeners(taskElement, task) {
+    taskElement.addEventListener('click', (e) => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      
+      switch (action) {
+        case 'toggle':
+          this.toggleTask(task.id);
+          break;
+        case 'edit':
+          this.editTask(task.id);
+          break;
+        case 'delete':
+          this.deleteTask(task.id);
+          break;
+      }
+    });
+  }
+
+  updateStats() {
+    const total = this.tasks.length;
+    const completed = this.tasks.filter(t => t.completed).length;
+    const pending = total - completed;
+
+    this.totalTasks.textContent = total;
+    this.completedTasks.textContent = completed;
+    this.pendingTasks.textContent = pending;
+    this.taskCount.textContent = total;
+
+    // Update page title with pending count
+    document.title = `TaskFlow Pro ${pending > 0 ? `(${pending})` : ''}`;
+  }
+
+  toggleTheme() {
+    this.isDarkTheme = !this.isDarkTheme;
+    this.applyTheme();
+    localStorage.setItem('darkTheme', this.isDarkTheme);
+  }
+
+  applyTheme() {
+    document.body.classList.toggle('light-theme', !this.isDarkTheme);
+    const icon = this.themeToggle.querySelector('.material-icons-outlined');
+    icon.textContent = this.isDarkTheme ? 'light_mode' : 'dark_mode';
+  }
+
+  focusInput() {
+    this.taskInput.focus();
+  }
+
+  handleKeyboardShortcuts(e) {
+    // Ctrl/Cmd + K to focus input
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      this.focusInput();
+    }
+    
+    // Ctrl/Cmd + D to toggle theme
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+      e.preventDefault();
+      this.toggleTheme();
+    }
+
+    // Ctrl/Cmd + Shift + Delete to delete all tasks
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Delete') {
+      e.preventDefault();
+      this.deleteAllTasks();
+    }
+  }
+
+  showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    this.toastContainer.appendChild(toast);
+    
+    
+    setTimeout(() => {
+      toast.style.animation = 'toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) reverse';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  }
+
+  getTimeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  }
+
+  escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  save() {
+    localStorage.setItem('tasks', JSON.stringify(this.tasks));
+  }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  new TaskManager();
+});
+
+
+const style = document.createElement('style');
+style.textContent = `
+  .task-item {
+    transform: translateX(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .task-item.removing {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+`;
+document.head.appendChild(style);
