@@ -1,0 +1,35 @@
+body { font-family: Arial, sans-serif; background:#f7f7f7; margin:0; text-align:center; }
+h1 { margin:20px 0; font-family:"Comic Sans MS", cursive; }
+
+.hidden { display: none; }
+
+/* Forms */
+.box { width: 350px; margin: 20px auto; text-align:left; }
+input { width:100%; padding:10px; margin:8px 0; }
+button { padding:10px 20px; border:none; border-radius:4px; cursor:pointer; }
+.orange { background:orange; color:white; font-weight:bold; }
+.red { background:red; color:white; font-weight:bold; }
+button:hover { opacity:0.85; }
+
+/* Tasks */
+#task-list { list-style:none; max-width:600px; margin:20px auto; padding:0; }
+.task {
+  display:flex; align-items:center; justify-content:space-between;
+  margin:6px 0; border-radius:6px; padding:8px; cursor:grab; color:white;
+}
+.task span { flex:1; margin:0 10px; text-align:left; font-size:16px; }
+.task.completed span { text-decoration: line-through; opacity:0.6; }
+
+.btn { padding:5px 10px; font-size:12px; border:none; border-radius:4px; cursor:pointer; margin-right:5px; }
+.drag-btn { background:#666; color:white; }
+.color-btn { background:#ffca28; color:black; }
+.del-btn { background:#e53935; color:white; }
+
+#new-task { width:300px; padding:10px; border:1px solid #ccc; border-radius:4px; }
+#add-btn { padding:10px 20px; background:orange; color:white; border:none; border-radius:4px; cursor:pointer; }
+#add-btn:hover { background:darkorange; }
+
+/* Footer site buttons */
+.site-buttons { text-align:center; padding:15px; background:#f4f4f4; margin-top:20px; }
+.site-buttons button { background:orange; color:white; border:none; padding:8px 16px; margin:0 6px; border-radius:5px; font-size:14px; font-weight:bold; cursor:pointer; }
+.site-buttons button:hover { background:darkorange; }

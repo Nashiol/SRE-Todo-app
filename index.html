@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Colored Lists SPA</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>
+    <span style="color:red;">c</span>
+    <span style="color:orange;">o</span>
+    <span style="color:green;">l</span>
+    <span style="color:blue;">o</span>
+    <span style="color:purple;">r</span>
+    <span style="color:teal;">ed</span> lists <sup>BETA</sup>
+  </h1>
+
+  <!-- SIGNUP / LOGIN -->
+  <div id="signup-page" class="box">
+    <h2>Sign up</h2>
+    <input type="email" id="signup-email" placeholder="Email">
+    <input type="password" id="signup-pass" placeholder="Password">
+    <button class="orange" onclick="register()">Sign Up</button>
+  </div>
+
+  <!-- LOGIN PAGE -->
+  <div id="login-page" class="box hidden">
+    <h2>Login</h2>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-pass" placeholder="Password">
+    <div class="site-buttons">
+      <button onclick="login()">Log in</button>
+      <button onclick="showPage('signup')">Go to Sign Up</button>
+    </div>
+  </div>
+
+  <!-- TASKS PAGE -->
+  <div id="tasks-page" class="hidden">
+    <h2>Your Tasks</h2>
+    <ul id="task-list"></ul>
+    <input type="text" id="new-task" placeholder="Enter new task">
+    <button id="add-btn">Add</button>
+
+    <div class="site-buttons">
+      <button onclick="logout()">Log out</button>
+      <button onclick="showPage('account')">Your Account</button>
+    </div>
+  </div>
+
+  <!-- ACCOUNT PAGE -->
+  <div id="account-page" class="hidden box">
+    <h2>Your Account</h2>
+    <input type="email" id="newEmail" placeholder="Change Email Address">
+    <button class="orange" onclick="changeEmail()">Change Email</button>
+
+    <input type="password" id="newPass" placeholder="New Password">
+    <input type="password" id="repeatPass" placeholder="Repeat New Password">
+    <button class="orange" onclick="changePassword()">Change Password</button>
+
+    <button class="red" onclick="deleteAccount()">Delete Account?</button>
+
+    <div class="site-buttons">
+      <button onclick="logout()">Log out</button>
+      <button onclick="showPage('tasks')">Back to Tasks</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
