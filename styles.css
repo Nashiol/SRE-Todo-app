@@ -350,6 +350,42 @@ body::before {
   cursor: pointer;
 }
 
+#dueDateInput {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+body.light-theme #dueDateInput {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.due-date {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.due-overdue {
+  background: rgba(250, 112, 154, 0.2);
+  color: #fa709a;
+}
+
+.task-item.overdue::before {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+}
+
 #addTaskBtn {
   background: var(--primary-gradient);
   border: none;
