@@ -309,10 +309,10 @@ class TaskManager {
     this.pendingTasks.textContent = pending;
     this.taskCount.textContent = total;
 
-    // Update progress bar
-    ProgressBar.update(total, completed);
+    if (typeof progressBar !== 'undefined') {
+      progressBar.update(completed, total);
+    }
 
-    // Update page title with pending count
     document.title = `TaskFlow Pro ${pending > 0 ? `(${pending})` : ''}`;
   }
 

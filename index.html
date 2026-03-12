@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,10 +12,11 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
+
 <body>
   <!-- Background particles -->
   <div class="particles"></div>
-  
+
   <!-- Main app container -->
   <div class="app animate__animated animate__fadeInUp">
     <!-- Header section -->
@@ -68,21 +70,22 @@
     </div>
 
     <!-- Task input section -->
-   <div class="input-actions">
-      <input type="color" id="colorInput" value="#6366f1" title="Choose task color">
-
-        <select id="priorityInput" title="Set priority">
-         <option value="low">Low</option>
-         <option value="medium" selected>Medium</option>
-         <option value="high">High</option>
-        </select>
-
-      <input type="date" id="dueDateInput" title="Set due date">
-
-  <button id="addTaskBtn" title="Add task">
-    <span class="material-icons-outlined">add</span>
-  </button>
-    </div>
+    <div class="input-section">
+      <div class="input-wrapper">
+        <span class="material-icons-outlined input-icon">add_task</span>
+        <input type="text" id="taskInput" placeholder="What needs to be done?" maxlength="100" />
+        <div class="input-actions">
+          <input type="date" id="dueDateInput" title="Set due date">
+          <input type="color" id="colorInput" value="#6366f1" title="Choose task color">
+          <select id="priorityInput" title="Set priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+          <button id="addTaskBtn" title="Add task">
+            <span class="material-icons-outlined">add</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -130,4 +133,5 @@
   <script src="progressBar.js"></script>
   <script src="script.js"></script>
 </body>
+
 </html>
