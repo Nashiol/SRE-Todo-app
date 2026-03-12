@@ -349,7 +349,21 @@ body::before {
   font-size: 14px;
   cursor: pointer;
 }
+#dueDateInput {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
 
+body.light-theme #dueDateInput {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  border-color: rgba(0, 0, 0, 0.2);
+}
 #addTaskBtn {
   background: var(--primary-gradient);
   border: none;

@@ -16,6 +16,7 @@ class TaskManager {
     this.taskInput = document.getElementById('taskInput');
     this.colorInput = document.getElementById('colorInput');
     this.priorityInput = document.getElementById('priorityInput');
+    this.dueDateInput = document.getElementById('dueDateInput');
     this.addTaskBtn = document.getElementById('addTaskBtn');
     this.taskList = document.getElementById('taskList');
     this.emptyState = document.getElementById('emptyState');
@@ -64,43 +65,45 @@ class TaskManager {
   }
 
   addTask() {
-    const text = this.taskInput.value.trim();
-    const color = this.colorInput.value;
-    const priority = this.priorityInput.value;
+  const text = this.taskInput.value.trim();
+  const color = this.colorInput.value;
+  const priority = this.priorityInput.value;
+  const dueDate = this.dueDateInput.value;
 
-    if (!text) {
-      this.showToast('Please enter a task!', 'error');
-      this.taskInput.focus();
-      return;
-    }
-
-    const task = {
-      id: Date.now(),
-      text,
-      color,
-      priority,
-      completed: false,
-      createdAt: new Date().toISOString(),
-      completedAt: null
-    };
-
-    this.tasks.unshift(task);
-    this.taskInput.value = '';
-    this.save();
-    this.render();
-    this.updateStats();
-    this.showToast('Task added successfully!');
-
-    // Add animation
-    setTimeout(() => {
-      const newTaskElement = this.taskList.firstElementChild;
-      if (newTaskElement) {
-        newTaskElement.style.animation = 'none';
-        newTaskElement.offsetHeight; // Force reflow
-        newTaskElement.style.animation = 'taskSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-      }
-    }, 10);
+  if (!text) {
+    this.showToast('Please enter a task!', 'error');
+    this.taskInput.focus();
+    return;
   }
+
+  const task = {
+    id: Date.now(),
+    text,
+    color,
+    priority,
+    dueDate,
+    completed: false,
+    createdAt: new Date().toISOString(),
+    completedAt: null
+  };
+
+  this.tasks.unshift(task);
+  this.taskInput.value = '';
+  this.dueDateInput.value = '';
+  this.save();
+  this.render();
+  this.updateStats();
+  this.showToast('Task added successfully!');
+
+  setTimeout(() => {
+    const newTaskElement = this.taskList.firstElementChild;
+    if (newTaskElement) {
+      newTaskElement.style.animation = 'none';
+      newTaskElement.offsetHeight;
+      newTaskElement.style.animation = 'taskSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
+  }, 10);
+}
 
   toggleTask(id) {
     const task = this.tasks.find(t => t.id === id);
@@ -246,33 +249,37 @@ class TaskManager {
   }
 
   createTaskHTML(task) {
-    const createdDate = new Date(task.createdAt).toLocaleDateString();
-    const timeAgo = this.getTimeAgo(task.createdAt);
-    
-    return `
-      <li class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
-        <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle">
-          ${task.completed ? '<span class="material-icons-outlined" style="font-size: 14px;">check</span>' : ''}
+  const timeAgo = this.getTimeAgo(task.createdAt);
+  const dueDateText = task.dueDate ? this.formatDueDate(task.dueDate) : 'No deadline';
+  const isOverdue = task.dueDate && !task.completed && new Date(task.dueDate) < new Date(new Date().toDateString());
+
+  return `
+    <li class="task-item ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" data-task-id="${task.id}">
+      <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle">
+        ${task.completed ? '<span class="material-icons-outlined" style="font-size: 14px;">check</span>' : ''}
+      </div>
+      <div class="task-color" style="background-color: ${task.color}"></div>
+      <div class="task-content">
+        <div class="task-text">${this.escapeHTML(task.text)}</div>
+        <div class="task-meta">
+          <span class="priority-badge priority-${task.priority}">${task.priority}</span>
+          <span>${timeAgo}</span>
+          <span class="due-date ${isOverdue ? 'due-overdue' : ''}">
+            ${task.dueDate ? `Due: ${dueDateText}` : dueDateText}
+          </span>
         </div>
-        <div class="task-color" style="background-color: ${task.color}"></div>
-        <div class="task-content">
-          <div class="task-text">${this.escapeHTML(task.text)}</div>
-          <div class="task-meta">
-            <span class="priority-badge priority-${task.priority}">${task.priority}</span>
-            <span>${timeAgo}</span>
-          </div>
-        </div>
-        <div class="task-actions">
-          <button class="task-btn edit" data-action="edit" title="Edit task">
-            <span class="material-icons-outlined" style="font-size: 16px;">edit</span>
-          </button>
-          <button class="task-btn delete" data-action="delete" title="Delete task">
-            <span class="material-icons-outlined" style="font-size: 16px;">delete</span>
-          </button>
-        </div>
-      </li>
-    `;
-  }
+      </div>
+      <div class="task-actions">
+        <button class="task-btn edit" data-action="edit" title="Edit task">
+          <span class="material-icons-outlined" style="font-size: 16px;">edit</span>
+        </button>
+        <button class="task-btn delete" data-action="delete" title="Delete task">
+          <span class="material-icons-outlined" style="font-size: 16px;">delete</span>
+        </button>
+      </div>
+    </li>
+  `;
+}
 
   setupTaskEventListeners(taskElement, task) {
     taskElement.addEventListener('click', (e) => {
@@ -377,7 +384,14 @@ class TaskManager {
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
   }
-
+  formatDueDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
   escapeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
