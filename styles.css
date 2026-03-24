@@ -845,3 +845,99 @@ body.light-theme {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* ============================================
+   Drag and Drop Styles
+   ============================================ */
+
+/* Drag Handle */
+.task-drag-handle {
+  cursor: grab;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.task-drag-handle:hover {
+  opacity: 1;
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Task Item Drag States */
+.task-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+  box-shadow: var(--shadow-xl);
+  z-index: 100;
+}
+
+.task-item.drag-over-top {
+  border-top: 3px solid var(--primary-gradient);
+  padding-top: 13px;
+  transition: all 0.2s ease;
+}
+
+.task-item.drag-over-bottom {
+  border-bottom: 3px solid var(--primary-gradient);
+  padding-bottom: 13px;
+  transition: all 0.2s ease;
+}
+
+/* Drop indicator line */
+.task-item.drag-over-top::before,
+.task-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 3px;
+  background: var(--primary-gradient);
+  border-radius: 2px;
+  opacity: 0.8;
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
+}
+
+.task-item.drag-over-top::before {
+  top: -3px;
+}
+
+.task-item.drag-over-bottom::after {
+  bottom: -3px;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateX(-50%) scaleX(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+}
+
+/* Dragging cursor */
+.task-item[draggable="true"] {
+  cursor: grab;
+}
+
+.task-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* Smooth transition for reordering */
+.task-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.task-item:not(.dragging):not(.drag-over-top):not(.drag-over-bottom) {
+  transition: var(--transition);
+}
