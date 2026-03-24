@@ -4,6 +4,7 @@ class TaskManager {
     this.currentFilter = 'all';
     this.currentSort = 'date';
     this.isDarkTheme = localStorage.getItem('darkTheme') !== 'false';
+    this.draggedTaskId = null;
     
     this.initializeElements();
     this.setupEventListeners();
@@ -218,6 +219,9 @@ class TaskManager {
       case 'alphabetical':
         filtered.sort((a, b) => a.text.localeCompare(b.text));
         break;
+      case 'manual':
+        // Preserve manual order - no sorting, use current array order
+        break;
       case 'date':
       default:
         filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -254,7 +258,10 @@ class TaskManager {
   const isOverdue = task.dueDate && !task.completed && new Date(task.dueDate) < new Date(new Date().toDateString());
 
   return `
-    <li class="task-item ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" data-task-id="${task.id}">
+    <li class="task-item ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" data-task-id="${task.id}" draggable="true">
+      <div class="task-drag-handle" title="Drag to reorder">
+        <span class="material-icons-outlined" style="font-size: 20px; color: var(--text-secondary);">drag_indicator</span>
+      </div>
       <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle">
         ${task.completed ? '<span class="material-icons-outlined" style="font-size: 14px;">check</span>' : ''}
       </div>
@@ -282,6 +289,7 @@ class TaskManager {
 }
 
   setupTaskEventListeners(taskElement, task) {
+    // Click event handlers
     taskElement.addEventListener('click', (e) => {
       const action = e.target.closest('[data-action]')?.dataset.action;
       
@@ -297,6 +305,130 @@ class TaskManager {
           break;
       }
     });
+
+    // Drag and drop event handlers
+    taskElement.addEventListener('dragstart', (e) => this.handleDragStart(e, task));
+    taskElement.addEventListener('dragend', (e) => this.handleDragEnd(e));
+    taskElement.addEventListener('dragover', (e) => this.handleDragOver(e));
+    taskElement.addEventListener('dragenter', (e) => this.handleDragEnter(e));
+    taskElement.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+    taskElement.addEventListener('drop', (e) => this.handleDrop(e, task));
+  }
+
+  handleDragStart(e, task) {
+    this.draggedTaskId = task.id;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', task.id);
+    
+    // Add a slight delay for visual feedback
+    setTimeout(() => {
+      e.target.classList.add('dragging');
+    }, 0);
+  }
+
+  handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+    
+    // Remove all drag-over classes
+    document.querySelectorAll('.task-item').forEach(item => {
+      item.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    
+    this.draggedTaskId = null;
+  }
+
+  handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+
+  handleDragEnter(e) {
+    e.preventDefault();
+    const taskElement = e.target.closest('.task-item');
+    if (!taskElement || !this.draggedTaskId) return;
+    
+    // Don't highlight if it's the same task being dragged
+    const draggedId = parseInt(this.draggedTaskId);
+    const targetId = parseInt(taskElement.dataset.taskId);
+    if (draggedId === targetId) return;
+
+    // Determine drop position based on cursor position
+    const rect = taskElement.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    
+    // Remove existing position classes from all items
+    document.querySelectorAll('.task-item').forEach(item => {
+      item.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+
+    // Add appropriate class based on cursor position
+    if (e.clientY < midpoint) {
+      taskElement.classList.add('drag-over-top');
+    } else {
+      taskElement.classList.add('drag-over-bottom');
+    }
+  }
+
+  handleDragLeave(e) {
+    const taskElement = e.target.closest('.task-item');
+    if (!taskElement) return;
+    
+    // Only remove classes if we're actually leaving the task item
+    const relatedTarget = e.relatedTarget;
+    if (relatedTarget && taskElement.contains(relatedTarget)) return;
+    
+    taskElement.classList.remove('drag-over-top', 'drag-over-bottom');
+  }
+
+  handleDrop(e, targetTask) {
+    e.preventDefault();
+    
+    const draggedId = parseInt(this.draggedTaskId);
+    const targetId = targetTask.id;
+    
+    if (draggedId === targetId) return;
+
+    // Determine the drop position
+    const taskElement = e.target.closest('.task-item');
+    const rect = taskElement.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const dropAfter = e.clientY >= midpoint;
+
+    // Reorder tasks in the main tasks array
+    this.reorderTasks(draggedId, targetId, dropAfter);
+    
+    // Switch to manual sort to preserve the user's reordering
+    if (this.currentSort !== 'manual') {
+      this.currentSort = 'manual';
+      this.sortBy.value = 'manual';
+    }
+    
+    // Clean up visual feedback
+    taskElement.classList.remove('drag-over-top', 'drag-over-bottom');
+    
+    // Re-render and update
+    this.save();
+    this.render();
+    this.updateStats();
+    this.showToast('Task reordered!');
+  }
+
+  reorderTasks(draggedId, targetId, insertAfter) {
+    const draggedIndex = this.tasks.findIndex(t => t.id === draggedId);
+    const targetIndex = this.tasks.findIndex(t => t.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const [draggedTask] = this.tasks.splice(draggedIndex, 1);
+    
+    let newIndex;
+    if (insertAfter) {
+      newIndex = targetIndex > draggedIndex ? targetIndex : targetIndex + 1;
+    } else {
+      newIndex = targetIndex > draggedIndex ? targetIndex - 1 : targetIndex;
+    }
+    
+    this.tasks.splice(newIndex, 0, draggedTask);
   }
 
   updateStats() {
