@@ -75,6 +75,16 @@
         <span class="material-icons-outlined input-icon">add_task</span>
         <input type="text" id="taskInput" placeholder="What needs to be done?" maxlength="100" />
         <div class="input-actions">
+          <div class="input-action-group">
+            <label for="categoryInput" class="action-label">Category</label>
+            <select id="categoryInput" title="Set category">
+              <option value="work">Work</option>
+              <option value="personal" selected>Personal</option>
+              <option value="shopping">Shopping</option>
+              <option value="health">Health</option>
+              <option value="learning">Learning</option>
+            </select>
+          </div>
           <input type="date" id="dueDateInput" title="Set due date">
           <input type="color" id="colorInput" value="#6366f1" title="Choose task color">
           <select id="priorityInput" title="Set priority">
@@ -100,24 +110,34 @@
 
     <!-- Filter and sort controls -->
     <div class="controls-section">
-      <div class="filter-buttons">
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="pending">Pending</button>
-        <button class="filter-btn" data-filter="completed">Completed</button>
+      <div class="controls-top">
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="pending">Pending</button>
+          <button class="filter-btn" data-filter="completed">Completed</button>
+        </div>
+        <div class="sort-controls">
+          <select id="sortBy">
+            <option value="date">Sort by Date</option>
+            <option value="priority">Sort by Priority</option>
+            <option value="alphabetical">Sort A-Z</option>
+            <option value="manual">Manual Order</option>
+          </select>
+          <button id="clearCompleted" title="Clear completed tasks">
+            <span class="material-icons-outlined">clear_all</span>
+          </button>
+          <button id="deleteAll" title="Delete all tasks">
+            <span class="material-icons-outlined">delete_sweep</span>
+          </button>
+        </div>
       </div>
-      <div class="sort-controls">
-        <select id="sortBy">
-          <option value="date">Sort by Date</option>
-          <option value="priority">Sort by Priority</option>
-          <option value="alphabetical">Sort A-Z</option>
-          <option value="manual">Manual Order</option>
-        </select>
-        <button id="clearCompleted" title="Clear completed tasks">
-          <span class="material-icons-outlined">clear_all</span>
-        </button>
-        <button id="deleteAll" title="Delete all tasks">
-          <span class="material-icons-outlined">delete_sweep</span>
-        </button>
+      <div class="category-filters">
+        <button class="category-filter-btn active" data-category="all" title="All categories">All</button>
+        <button class="category-filter-btn" data-category="work" title="Work tasks">Work</button>
+        <button class="category-filter-btn" data-category="personal" title="Personal tasks">Personal</button>
+        <button class="category-filter-btn" data-category="shopping" title="Shopping tasks">Shopping</button>
+        <button class="category-filter-btn" data-category="health" title="Health tasks">Health</button>
+        <button class="category-filter-btn" data-category="learning" title="Learning tasks">Learning</button>
       </div>
     </div>
 

@@ -347,6 +347,39 @@ body::before {
   font-size: 14px;
   cursor: pointer;
 }
+
+/* Input Action Group with Label */
+.input-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.action-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#categoryInput {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+#categoryInput:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 #dueDateInput {
   background: var(--bg-glass);
   border: 1px solid var(--border-color);
@@ -393,11 +426,17 @@ body.light-theme #dueDateInput::-webkit-calendar-picker-indicator {
 /* Controls Section */
 .controls-section {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 0 24px;
   margin-bottom: 24px;
-  gap: 16px;
+  gap: 12px;
+}
+
+.controls-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .filter-buttons {
@@ -451,18 +490,160 @@ body.light-theme #dueDateInput::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
+/* Category Filters */
+.category-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 0;
+  margin: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(102, 126, 234, 0.3) transparent;
+}
+
+.category-filters::-webkit-scrollbar {
+  height: 4px;
+}
+
+.category-filters::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.category-filters::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 4px;
+}
+
+.category-filters::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.5);
+}
+
+.category-filter-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-filter-btn:hover {
+  color: var(--text-primary);
+  border-color: #667eea;
+}
+
+.category-filter-btn.active {
+  color: var(--text-primary);
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.category-filter-btn[data-category="work"].active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.category-filter-btn[data-category="personal"].active {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+  color: #ec4899;
+}
+
+.category-filter-btn[data-category="shopping"].active {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.category-filter-btn[data-category="health"].active {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.category-filter-btn[data-category="learning"].active {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+/* Light theme category filters */
+body.light-theme .category-filter-btn {
+  background: rgba(255, 255, 255, 0.6);
+  color: #64748b;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .category-filter-btn.active {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+  color: #667eea;
+}
+
+/* Category Badge */
+.category-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
+.category-badge.work {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.category-badge.personal {
+  background: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+}
+
+.category-badge.shopping {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.category-badge.health {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.category-badge.learning {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
 /* Light theme dropdown fixes */
 body.light-theme #sortBy,
-body.light-theme #priorityInput {
+body.light-theme #priorityInput,
+body.light-theme #categoryInput {
   background: rgba(255, 255, 255, 0.9);
   color: #1e293b;
   border-color: rgba(0, 0, 0, 0.2);
 }
 
 body.light-theme #sortBy option,
-body.light-theme #priorityInput option {
+body.light-theme #priorityInput option,
+body.light-theme #categoryInput option {
   background: #ffffff;
   color: #1e293b;
+}
+
+body.light-theme .action-label {
+  color: #64748b;
 }
 
 #clearCompleted {
@@ -899,10 +1080,40 @@ body.light-theme .clear-search-btn:hover {
     flex-direction: column;
     gap: 12px;
   }
+
+  .controls-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
   
   .filter-buttons {
     width: 100%;
     justify-content: center;
+  }
+
+  .sort-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .sort-controls select,
+  .sort-controls button {
+    flex: 1;
+  }
+
+  .sort-controls button {
+    min-width: 36px;
+  }
+
+  .input-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .input-action-group {
+    flex: 1;
+    min-width: 100px;
   }
   
   .toast {

@@ -2,6 +2,7 @@ class TaskManager {
   constructor() {
     this.tasks = JSON.parse(localStorage.getItem('tasks')) || [];
     this.currentFilter = 'all';
+    this.currentCategory = 'all';
     this.currentSort = 'date';
     this.isDarkTheme = localStorage.getItem('darkTheme') !== 'false';
     this.draggedTaskId = null;
@@ -18,6 +19,7 @@ class TaskManager {
     this.taskInput = document.getElementById('taskInput');
     this.colorInput = document.getElementById('colorInput');
     this.priorityInput = document.getElementById('priorityInput');
+    this.categoryInput = document.getElementById('categoryInput');
     this.dueDateInput = document.getElementById('dueDateInput');
     this.addTaskBtn = document.getElementById('addTaskBtn');
     this.searchInput = document.getElementById('searchInput');
@@ -26,6 +28,7 @@ class TaskManager {
     this.emptyState = document.getElementById('emptyState');
     this.themeToggle = document.getElementById('themeToggle');
     this.filterBtns = document.querySelectorAll('.filter-btn');
+    this.categoryFilterBtns = document.querySelectorAll('.category-filter-btn');
     this.sortBy = document.getElementById('sortBy');
     this.clearCompleted = document.getElementById('clearCompleted');
     this.deleteAll = document.getElementById('deleteAll'); // Add this line
@@ -55,6 +58,11 @@ class TaskManager {
       btn.addEventListener('click', (e) => this.setFilter(e.target.dataset.filter));
     });
 
+    // Category filters
+    this.categoryFilterBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => this.setCategory(e.target.dataset.category));
+    });
+
     // Sort
     this.sortBy.addEventListener('change', (e) => this.setSortBy(e.target.value));
 
@@ -76,6 +84,7 @@ class TaskManager {
   const text = this.taskInput.value.trim();
   const color = this.colorInput.value;
   const priority = this.priorityInput.value;
+  const category = this.categoryInput.value;
   const dueDate = this.dueDateInput.value;
 
   if (!text) {
@@ -89,6 +98,7 @@ class TaskManager {
     text,
     color,
     priority,
+    category,
     dueDate,
     completed: false,
     createdAt: new Date().toISOString(),
@@ -163,6 +173,14 @@ class TaskManager {
     this.render();
   }
 
+  setCategory(category) {
+    this.currentCategory = category;
+    this.categoryFilterBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.category === category);
+    });
+    this.render();
+  }
+
   setSearchTerm(term) {
     this.searchTerm = term.trim().toLowerCase();
     this.render();
@@ -234,6 +252,11 @@ class TaskManager {
         break;
     }
 
+    // Apply category filter
+    if (this.currentCategory !== 'all') {
+      filtered = filtered.filter(t => t.category === this.currentCategory);
+    }
+
     // Apply sort
     switch (this.currentSort) {
       case 'priority':
@@ -293,6 +316,7 @@ class TaskManager {
       <div class="task-content">
         <div class="task-text">${this.escapeHTML(task.text)}</div>
         <div class="task-meta">
+          <span class="category-badge ${task.category || 'personal'}">${(task.category || 'personal').toUpperCase()}</span>
           <span class="priority-badge priority-${task.priority}">${task.priority}</span>
           <span>${timeAgo}</span>
           <span class="due-date ${isOverdue ? 'due-overdue' : ''}">
