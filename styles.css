@@ -94,7 +94,7 @@ body::before {
 
 /* Main App Container */
 .app {
-  max-width: 500px;
+  max-width: 680px;
   margin: 0 auto;
   background: var(--bg-glass);
   backdrop-filter: blur(20px);
@@ -324,9 +324,10 @@ body::before {
 
 .input-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   z-index: 1;
+  flex-wrap: wrap;
 }
 
 #colorInput {
