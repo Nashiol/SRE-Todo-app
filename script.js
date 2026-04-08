@@ -5,6 +5,7 @@ class TaskManager {
     this.currentSort = 'date';
     this.isDarkTheme = localStorage.getItem('darkTheme') !== 'false';
     this.draggedTaskId = null;
+    this.searchTerm = '';
     
     this.initializeElements();
     this.setupEventListeners();
@@ -19,6 +20,8 @@ class TaskManager {
     this.priorityInput = document.getElementById('priorityInput');
     this.dueDateInput = document.getElementById('dueDateInput');
     this.addTaskBtn = document.getElementById('addTaskBtn');
+    this.searchInput = document.getElementById('searchInput');
+    this.clearSearchBtn = document.getElementById('clearSearchBtn');
     this.taskList = document.getElementById('taskList');
     this.emptyState = document.getElementById('emptyState');
     this.themeToggle = document.getElementById('themeToggle');
@@ -54,6 +57,10 @@ class TaskManager {
 
     // Sort
     this.sortBy.addEventListener('change', (e) => this.setSortBy(e.target.value));
+
+    // Search
+    this.searchInput.addEventListener('input', (e) => this.setSearchTerm(e.target.value));
+    this.clearSearchBtn.addEventListener('click', () => this.clearSearch());
 
     // Clear completed
     this.clearCompleted.addEventListener('click', () => this.clearCompletedTasks());
@@ -156,6 +163,18 @@ class TaskManager {
     this.render();
   }
 
+  setSearchTerm(term) {
+    this.searchTerm = term.trim().toLowerCase();
+    this.render();
+  }
+
+  clearSearch() {
+    this.searchInput.value = '';
+    this.searchTerm = '';
+    this.render();
+    this.searchInput.focus();
+  }
+
   clearCompletedTasks() {
     const completedCount = this.tasks.filter(t => t.completed).length;
     if (completedCount === 0) {
@@ -200,7 +219,12 @@ class TaskManager {
   getFilteredAndSortedTasks() {
     let filtered = [...this.tasks];
 
-    // Apply filter
+    // Apply search filter
+    if (this.searchTerm) {
+      filtered = filtered.filter(t => t.text.toLowerCase().includes(this.searchTerm));
+    }
+
+    // Apply status filter
     switch (this.currentFilter) {
       case 'pending':
         filtered = filtered.filter(t => !t.completed);
@@ -481,6 +505,13 @@ class TaskManager {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Delete') {
       e.preventDefault();
       this.deleteAllTasks();
+    }
+
+    // Ctrl/Cmd + F to focus search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      this.searchInput.focus();
+      this.searchInput.select();
     }
   }
 
